@@ -1,0 +1,138 @@
+004-005 @READ_PROGRAM_MEMORY8.P1
+015     CCP_1
+015     CCP_1_LOW
+016     CCP_1_HIGH
+01F.6   C1OUT
+01F.7   C2OUT
+020     @INTERRUPT_AREA
+021     @INTERRUPT_AREA
+022     @INTERRUPT_AREA
+023     @INTERRUPT_AREA
+024     @INTERRUPT_AREA
+025     @INTERRUPT_AREA
+026     @INTERRUPT_AREA
+027     @INTERRUPT_AREA
+028-029 flag
+02A-03F buff
+040-041 velocidade
+042-061 m
+062     posx
+063     posy
+064-065 passosx
+066-067 passosy
+068-069 passosz
+06A     sentidox
+06B     sentidoy
+06C     zero.a
+06C     converte.w
+06C     MAIN.@SCRATCH1
+06D     @delay_ms1.P1
+06D     converte.a
+06D     zero.@SCRATCH1
+06E     converte.b
+06E     zero.@SCRATCH2
+06F     converte.sinal
+06F-070 mover.x
+070-071 converte.temp
+071-072 mover.y
+072-073 @MUL1616.P1
+072     converte.@SCRATCH1
+073-074 mover.z
+073     converte.@SCRATCH2
+074-075 @MUL1616.P1
+074     converte.@SCRATCH3
+075-076 mover.passos
+076     @MUL1616.@SCRATCH1
+077     @SCRATCH
+078     @SCRATCH
+078     _RETURN_
+079     @SCRATCH
+07A     @SCRATCH
+07B-07E mover.quebrax
+09B-09C @READ_PROGRAM_MEMORY8.P1
+0A0-0A3 mover.contadorx
+0A4-0A7 mover.quebray
+0A8-0AB mover.contadory
+0AC-0AF @FLT.P1
+0AC-0AF @ADDFF.P2
+0AC     limpar.@SCRATCH1
+0AC     mover.@SCRATCH1
+0AD     @delay_us1.P1
+0AD     limpar.@SCRATCH2
+0AD     mover.@SCRATCH2
+0AE     mover.@SCRATCH3
+0AF     mover.@SCRATCH4
+0B0-0B3 @DIVFF.P1
+0B0-0B1 @ITOF.P2
+0B0-0B3 @ADDFF.P3
+0B0-0B3 @FLT.P4
+0B4-0B7 @DIVFF.P1
+0B4     @ADDFF.@SCRATCH1
+0B4     @FLT.@SCRATCH1
+0B5     @ADDFF.@SCRATCH2
+0B5     @FLT.@SCRATCH2
+0B6     @ADDFF.@SCRATCH3
+0B7     @ADDFF.@SCRATCH4
+0B8     @DIVFF.@SCRATCH1
+0B8     @ADDFF.@SCRATCH5
+0B9     @DIVFF.@SCRATCH2
+0B9     @ADDFF.@SCRATCH6
+0BA     @DIVFF.@SCRATCH3
+0BA     @ADDFF.@SCRATCH7
+0BB     @DIVFF.@SCRATCH4
+0BB     @ADDFF.@SCRATCH8
+0BC     @DIVFF.@SCRATCH5
+0BD     @DIVFF.@SCRATCH6
+
+ROM Allocation:
+005F  @delay_ms1
+02E5  @delay_us1
+040E  movex
+0474  movey
+02F6  limpar
+0031  @const79
+0311  mover
+0073  @ITOF
+0092  @DIVFF
+015E  @ADDFF
+02A4  @FLT
+04E2  zero
+0516  converte
+0501  @MUL1616
+05F4  @goto10294
+004B  serial_isr
+05FD  MAIN
+05FD  @cinit
+
+
+User Memory space: 
+
+User Memory space: 
+
+Project Directory:
+    C:\Users\Bancada\Dropbox\Xevete\UNISC\2016\TCC2\Firmware PIC16F628A HalfStep\
+
+Project Files:
+    CNC firmware PIC16F628A.c
+    ..\..\..\..\..\..\..\..\Program Files (x86)\PICC\devices\16F628A.h
+
+Units:
+    C:\Users\Bancada\Dropbox\Xevete\UNISC\2016\TCC2\Firmware PIC16F628A HalfStep\CNC firmware PIC16F628A (main)
+
+Compiler Settings:
+    Processor:      PIC16F628A
+    Pointer Size:   16
+    Opt Level:      9
+    Short,Int,Long: UNSIGNED: 1,8,16
+    Float,Double:   32,32
+
+Output Files:
+    Errors:      CNC firmware PIC16F628A.err
+    Ext Symbols: CNC firmware PIC16F628A.esym
+    INHX8:       CNC firmware PIC16F628A.hex
+    Symbols:     CNC firmware PIC16F628A.sym
+    List:        CNC firmware PIC16F628A.lst
+    Debug/COFF:  CNC firmware PIC16F628A.cof
+    Project:     CNC firmware PIC16F628A.PJT
+    Call Tree:   CNC firmware PIC16F628A.tre
+    Statistics:  CNC firmware PIC16F628A.sta

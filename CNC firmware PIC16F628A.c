@@ -1,0 +1,242 @@
+#include <16F628A.h>
+ // exemplo de entrada de dados x-25y250z1, +0 vai apra posicao inicial e v10 seta velocidade em 10
+
+#FUSES NOWDT                    //No Watch Dog Timer
+#FUSES HS                       //Internal RC Osc, no CLKOUT
+#FUSES NOPUT                    //No Power Up Timer
+#FUSES NOPROTECT                //Code not protected from reading
+#FUSES NOBROWNOUT               //No brownout reset                                                     
+#FUSES MCLR                     //Master Clear pin used for I/O
+#FUSES NOLVP                    //No low voltage prgming, B3(PIC16) or B5(PIC18) used for I/O
+#FUSES NOCPD                    //No EE protection
+                
+#use delay(clock=20000000)    //clock maximo com ocilador externo
+        
+#use rs232(baud=19200, parity=N, xmit=PIN_B2, rcv=PIN_B1)  // parametros da porta com
+//define os pinos do PIC para cada função
+#define mxa     PIN_B0 //motor X
+#define mxb     PIN_A0                 
+#define mxc     PIN_A1 
+#define mxd     PIN_B3 
+#define mya     PIN_B4 //motor Y
+#define myb     PIN_B5              
+#define myc     PIN_B6 
+#define myd     PIN_B7 
+#define AZ     PIN_A2 // Solenoide eixo Z
+#define AX     PIN_A3 // sensor 0 X
+#define AY     PIN_A4 // sensor 0 Y
+//usa boolean consome mais ROM  
+#use fast_io(B) 
+#use fast_io(A) 
+
+#define stepType 7               //3 para fullStep e 7 para halfStep
+signed int16 flag = 0;            //controle de quando chamar os movimentos
+char buff[22];                    //Variavel do tipo char com 21 caracteres
+unsigned long int velocidade = 1500;      //velocidade de rotação inical recomendado 7, em simulação 150
+unsigned int m[4][8]={1,1,0,0,0,0,0,1,    //padrão de rotação dos motores X e Y, o Z usa vetor externo
+                      0,1,1,1,0,0,0,0,
+                      0,0,0,1,1,1,0,0,
+                      0,0,0,0,0,1,1,1};
+signed int posx = 0, posy = 0;            //posição dos motores
+unsigned int16 passosx,passosy,passosz;   // variaveis de numero de passos
+int sentidox, sentidoy;                   // variaveis de sentido de giro dos motores
+
+void movex()                              //movimento de 1 pulso motor x
+{
+   if (sentidox == 1)
+   {
+      posx++;
+      if (posx > stepType)
+         posx = 0;
+   }                  
+   else
+   {
+      posx--;      
+      if (posx < 0)//posx
+        posx = stepType;
+   }
+   output_bit( mxa, m[3][posx]); //motor X
+   output_bit( mxb, m[2][posx]);
+   output_bit( mxc, m[1][posx]);
+   output_bit( mxd, m[0][posx]);
+}
+void movey()                            //movimento de 1 pulso motor y
+{
+   if (sentidoy == 1)
+   {
+      posy++;
+      if (posy > stepType)
+         posy = 0;
+   }
+   else
+   {
+      posy--;      
+      if (posy < 0)  //posy
+        posy = stepType;
+   }
+   output_bit( mya, m[3][posy]); //motor Y
+   output_bit( myb, m[2][posy]);
+   output_bit( myc, m[1][posy]);
+   output_bit( myd, m[0][posy]);
+}
+
+void limpar() //zera as variaveis de motor eo buffer;
+{
+     passosx = 0;
+     passosy = 0;
+     passosz = 0; 
+     buff = "000000000000000000000"; //limpa o buffer
+}
+void mover(unsigned int16 x,unsigned int16 y, unsigned int16 z) //movimenta os motores de acordo com o numero
+{  
+     output_bit( AZ, z);
+     unsigned int16 passos = 0;
+     float quebrax = 0, contadorx = 0;
+     float quebray = 0, contadory = 0;
+     if      (x>=y) //quando X>
+        passos = x;
+     else if (y>=x) //quando Y>
+        passos = y; 
+     else           //quando X=Y                    
+        passos = y; 
+     quebrax = (float)x/passos;                     
+     quebray = (float)y/passos;    
+     for(;passos>0;passos--)
+     {
+         contadorx = contadorx + quebrax;
+         contadory = contadory + quebray;
+         if (contadorx >= 1 ) //x
+         {
+            movex();
+            contadorx = contadorx - 1;
+         }
+         if (contadory >= 1 ) //y
+         {
+            movey();
+            contadory = contadory - 1;   
+         }
+      //   delay_ms(velocidade);
+         delay_us(velocidade);
+     }
+     limpar();
+}
+void zero()   //leva o carro até os sensores serem precionados
+{
+   int a = 1;
+   sentidox = 1;  //seta o movimento em regreço
+   sentidoy = 1;  //seta o movimento em regreço
+   while (a)
+   {      
+      mover(!input(AX),!input (AY),0); //move 1 passo em cada motor ainda não em 0
+      if ((input(AX) == 1)&&(input(AY) == 1)) //contorle de parada do while
+         a = 0;                                                 
+   }
+   limpar();
+}
+void converte(int w)  //procura valor para caracter de filtragem w
+{
+    int a,b;
+    int sinal = 0;
+    long int temp = 0; //valor numerico temporario calculado
+    for (a=0;a<21;a++)  //busca posição do caracter procurado no buff
+    {   
+        if(buff[a] == w) //caso encontrado
+        {     
+            for (b=a+1;b<21;b++)   //converte a string em int a partir do caracter inforado
+            {
+               if(buff[b] == 45)
+                  sinal = 1;
+               else if ((buff[b]>=48)&&((buff[b]<=57)))
+                  temp = (temp*10)+(buff[b]-48);
+               else
+               {
+                  b = 21;
+                  a = b;
+               }
+            }           
+        }
+    }
+    switch(w)  //distribui a cada cada variavel seu valor correto
+    {
+      case 120: //x
+         passosx = temp;  //valor atribuido a x
+         sentidox = sinal; //positivo ou negativo, sentido de retação
+         break;
+      case 121: //y
+         passosy = temp;  //valor atribuido a y
+         sentidoy = sinal; //positivo ou negativo, sentido de retação
+         break;
+      case 122: //z
+         passosz = temp;  //valor atribuido  
+         break;
+      case 118: //v seta a velocidade dos motores
+         if (temp > 0)
+         {
+          if (temp > 200)
+            {
+               switch(temp)   //taxas de dados suportadas 
+               {
+                 case 201: set_uart_speed(1200);
+                           break;                   
+                 case 202: set_uart_speed(4800);
+                           break;
+                 case 203: set_uart_speed(9600);
+                           break;
+                 case 204: set_uart_speed(19200);
+                           break;
+                 case 205: set_uart_speed(57600);
+                           break;
+                 case 206: set_uart_speed(115200);
+                           break;
+               }
+            }
+            else
+            velocidade = temp*100;
+         limpar();
+         }           
+    }         
+}
+
+#int_rda
+void serial_isr()  //Utiliza-se uma interrupção para receber dados da porta serial  
+{ 
+   gets(buff);  //coloca no buffer o que foi recebido
+   flag = 1; //habilita a interpretação do buff
+}
+void main(void) // função principal
+{                                               
+   set_tris_b(0b00000010); 
+   set_tris_a(0b00011000);    
+   output_bit( AZ, 0); 
+   delay_ms(300);                  
+   mover(200, 200, 0);        //movimentação padrão de inico, garante motores sempre iniciarem iguais
+   delay_ms(20);   
+   zero();                    //retorna o carro a 0 para inicio do trabalho
+   enable_interrupts(int_rda);//Habilita interrupção da porta serial
+   enable_interrupts(global);
+   while(1)                   //sempre a espera de entrada de comando
+   {                          
+      if (flag <= 0)  //nada para receber, envia o feedback             
+      {   
+         printf("2\n\r"); // feedback para enviar proxima coordenada 
+         if (flag <=0) 
+            for(flag=-2000;flag<0;flag++)    //delay interrompivel
+               delay_us(1); 
+      }                       
+      else        //dados recebidos, interpreta e move
+      {
+         if ((buff[0] == 43) && ((buff[1] == 48)))  // caso recebido +0, ir para posição inicial
+            zero();
+         else                    
+         {
+            converte(118); //busca valores para velocidade
+            converte(120); //busca valores para x                  
+            converte(121); //busca valores para y   
+            converte(122); //busca valores para z
+            mover(passosx, passosy, passosz);
+         }
+         flag = 0;  //desativa interpretação até o proximo envio 
+      }
+   }
+}
+
